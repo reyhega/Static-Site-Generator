@@ -29,6 +29,26 @@ class TestHTMLNode(unittest.TestCase):
         node = HTMLNode("p", "This should display...", None, {"class": "deez"})
         self.assertEqual(node.__repr__(),"HTMLNode(tag=p, value=This should display..., children=None, props={'class': 'deez'})")
 
+    def test_leaf_to_html_p(self):
+        node = LeafNode("p", "Hello, world!")
+        self.assertEqual(node.to_html(), "<p>Hello, world!</p>")
+
+    def test_leaf_to_html_a(self):
+        node = LeafNode("a", "Click here!", {"href": "https://www.google.com"})
+        self.assertEqual(node.to_html(), '<a href="https://www.google.com">Click here!</a>')
+
+    def test_leaf_to_html_a_self(self):
+        node = LeafNode("a", "Click here!", {"href": "https://www.google.com", "target": "_self"})
+        self.assertEqual(node.to_html(), '<a href="https://www.google.com" target="_self">Click here!</a>')
+    
+    def test_leaf_to_html_no_tag(self):
+        node = LeafNode(None, "This is plain text")
+        self.assertEqual(node.to_html(), "This is plain text")
+    
+    def test_leaf_repr(self):
+        node = LeafNode("a", "This is a link", {"href": "https://www.google.com", "target": "_self"})
+        self.assertEqual(node.__repr__(), "LeafNode(tag=a, value=This is a link, props={'href': 'https://www.google.com', 'target': '_self'})")
+
 
 if __name__ == "__main__":
     unittest.main()
