@@ -1,6 +1,7 @@
 import unittest
 
-from inline_markdown import split_nodes_delimiter
+from inline_markdown import (split_nodes_delimiter, extract_markdown_images, extract_markdown_links)
+
 from textnode import TextNode, TextType
 
 class TestSplitDelimeter(unittest.TestCase):
@@ -37,6 +38,27 @@ class TestSplitDelimeter(unittest.TestCase):
             TextNode("italic words", TextType.ITALIC),
         ]
         self.assertEqual(new_nodes, node_result)
+
+################# ExtractMarkdown Tests #################
+
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "Thisis a text with a [link](https://google.com) and [another link](https://youtube.com)"
+        )
+        self.assertListEqual(
+            [
+                ("link", "https://google.com"),
+                ("another link", "https://youtube.com"),
+            ],
+            matches,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
