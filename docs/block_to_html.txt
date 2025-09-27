@@ -1,0 +1,175 @@
+Short explanation of the implementation for 'Block to HTML' provided by our friend Boots:
+
+High-level
+
+It parses a full Markdown document into block-level chunks.
+It classifies each block (paragraph, heading, code, quote, ordered list, unordered list).
+It converts each block into an HTML node tree, handling inline Markdown inside most blocks.
+It wraps all block nodes under a single div parent.
+Key pieces
+
+BlockType enum
+Enumerates six block kinds: paragraph, heading, code, quote, ordered_list, unordered_list.
+markdown_to_blocks(markdown)
+Splits the raw markdown string into blocks separated by blank lines: split on "\n\n".
+Trims whitespace for each block and drops empty ones.
+Returns a list of normalized blocks.
+block_to_block_type(block)
+Determines the block’s type:
+Headings: lines starting with 1–6 hashes and a space (e.g., "# ", "## ", ...).
+Code blocks: multiple lines where the first and last lines start with ``` (backticks).
+Quote blocks: all lines must start with ">".
+Unordered lists: all lines must start with "- ".
+Ordered lists: lines must start with "1. ", "2. ", ... incrementing by one.
+Otherwise, paragraph.
+If any line in a supposed list/quote violates the format, it falls back to paragraph.
+markdown_to_html_node(markdown)
+Orchestrator:
+Converts markdown to blocks.
+For each block, converts it to an HTML node via block_to_html_node.
+Wraps all those as children of a ParentNode("div", children, None).
+block_to_html_node(block)
+Dispatches by block type to the specific builder:
+paragraph_to_html_node
+heading_to_html_node
+code_to_html_node
+olist_to_html_node
+ulist_to_html_node
+quote_to_html_node
+text_to_children(text)
+Inline parsing bridge:
+Uses text_to_textnodes(text) to produce a list of TextNode objects representing inline markdown (bold, italic, code, links, etc., as implemented elsewhere).
+Converts each TextNode into its corresponding HTML node via text_node_to_html_node.
+Returns a list of child nodes suitable for embedding inside block nodes.
+paragraph_to_html_node(block)
+Joins multi-line paragraph blocks with spaces (preserving paragraph semantics).
+Parses inline markdown via text_to_children.
+Wraps children in ParentNode("p", children).
+heading_to_html_node(block)
+Counts leading '#' to determine heading level.
+Validates that there’s a space and content after the hashes.
+Extracts the text after the "# " prefix.
+Parses inline markdown in the heading text.
+Returns ParentNode(f"h{level}", children).
+code_to_html_node(block)
+Validates code fence: must start and end with ``` on separate lines.
+Extracts the raw text between the fences; importantly, it does not run inline parsing.
+Wraps raw text as a text node, then as <code>, then as <pre>:
+<pre><code>...raw text...</code></pre>
+This matches the lesson’s “no inline parsing inside code blocks” rule.
+olist_to_html_node(block)
+Splits lines, strips the leading "N. " (three chars) from each line to get item text.
+Parses inline markdown inside each item via text_to_children.
+Wraps each in <li>, then returns ParentNode("ol", items).
+ulist_to_html_node(block)
+Similar to ordered list, but strips "- " (two chars).
+Parses inline, wraps each in <li>, then returns ParentNode("ul", items).
+quote_to_html_node(block)
+Validates every line starts with ">".
+Strips the leading ">" and surrounding whitespace from each line.
+Joins lines with spaces into a single string for the quote’s content.
+Parses inline markdown.
+Wraps in ParentNode("blockquote", children).
+Notable design choices
+
+Inline parsing is centralized via text_to_children, except for code blocks where inline parsing is intentionally skipped.
+Multi-line paragraphs and quotes are collapsed into a single line of text separated by spaces, which is suitable for HTML rendering.
+Ordered list validation for block detection requires strictly increasing numeric prefixes starting at 1 when identifying the block type, but during HTML generation it assumes already-validated lines and simply slices off the marker.
+This structure aligns with the tests in the lesson:
+
+Div root containing block-level nodes.
+Inline parsing inside paragraphs and headings, but not inside fenced code.
+Correct tag mapping for quotes, lists, and headings.
+
+
+Example:
+
+Input markdown:
+
+# Title
+
+This is **bold** and `code`.
+
+- Item one
+- Item two
+
+
+code block no inline
+
+
+> A quote
+> across lines
+
+Step 1: markdown_to_blocks
+
+Split on blank lines and strip:
+"# Title"
+"This is bold and code."
+"- Item one\n- Item two"
+"\ncode block _no_ inline\n"
+"> A quote\n> across lines"
+Step 2: block_to_block_type per block
+
+"# Title" → HEADING (starts with "# ")
+paragraph text → PARAGRAPH
+lines all start with "- " → ULIST
+first and last lines start with ``` → CODE
+all lines start with ">" → QUOTE
+Step 3: markdown_to_html_node orchestrates
+
+For each block, call block_to_html_node and collect children under ParentNode("div", children).
+Step 4: block_to_html_node details
+
+Heading: "# Title"
+
+heading_to_html_node
+Count hashes: level=1
+Text after "# " → "Title"
+text_to_children("Title") → [TextNode(TEXT,"Title")] → [HTML text node]
+ParentNode("h1", [text node])
+Paragraph: "This is bold and code."
+
+paragraph_to_html_node
+Single line, so paragraph text is unchanged
+text_to_children parses inline:
+"This is " → text
+"bold" → bold
+" and " → text
+"code" → inline code
+"." → text
+Convert each TextNode → corresponding HTML child nodes: text, <b>, text, <code>, text
+ParentNode("p", [children])
+Unordered list:
+
+ulist_to_html_node
+Split lines:
+"- Item one" → strip first 2 chars → "Item one"
+"- Item two" → "Item two"
+For each item:
+text_to_children on string
+Wrap in ParentNode("li", children)
+Wrap list: ParentNode("ul", [li1, li2])
+Code block:
+
+code_to_html_node
+Validate fences
+Extract text = block[4:-3] → "code block no inline\n"
+Note: no inline parsing here
+Make raw TextNode(TEXT, text) → text_node_to_html_node → text node
+Wrap: ParentNode("code", [text]) → ParentNode("pre", [code])
+Quote:
+
+quote_to_html_node
+Validate each line starts with ">"
+Strip leading ">" and surrounding spaces:
+"A quote"
+"across lines"
+Join with spaces → "A quote across lines"
+Inline parse via text_to_children (no special markup here)
+ParentNode("blockquote", [text child])
+Step 5: Wrap all children
+
+ParentNode("div", [h1, p, ul, pre, blockquote])
+Final HTML (to_html):
+<div><h1>Title</h1><p>This is <b>bold</b> and <code>code</code>.</p><ul><li>Item one</li><li>Item two</li></ul><pre><code>code block no inline
+</code></pre><blockquote>A quote across lines</blockquote></div>
