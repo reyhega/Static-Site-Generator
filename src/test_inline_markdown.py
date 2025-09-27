@@ -150,6 +150,5 @@ class TestSplitDelimeter(unittest.TestCase):
         self.assertEqual(nodes, nodes_result)
 
 
-
 if __name__ == "__main__":
     unittest.main()
