@@ -1,9 +1,10 @@
-from textnode import *
+from copy_to_directory import copy_contents_to_directory
+
+source_dir = "static"
+dest_dir = "public"
 
 def main():
-    test = TextNode("This is a test", TextType.LINK, "https://www.boot.dev" )
-    print(test)
-
+    copy_contents_to_directory(source_dir, dest_dir)
 
 
 main ()
