@@ -9,13 +9,14 @@ dir_path_public = "./public"
 dir_path_content = "./content"
 dir_path_docs = "./docs"
 template_path = "./template.html"
+default_basepath = "/"
 
 
 def main():
+    basepath = default_basepath
     if len(sys.argv) > 1:
         basepath = sys.argv[1]
-    else:
-        basepath = "/"
+
 
     copy_contents_to_directory(dir_path_static, dir_path_docs)
 
