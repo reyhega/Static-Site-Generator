@@ -1,7 +1,7 @@
 import os
 
 from copy_to_directory import copy_contents_to_directory
-from generate_page import generate_page
+from generate_page import generate_pages_recursively
 
 dir_path_static = "./static"
 dir_path_public = "./public"
@@ -16,7 +16,7 @@ def main():
     copy_contents_to_directory(dir_path_static, dir_path_public)
 
 
-    generate_page(from_path, template_path, dest_path)
+    generate_pages_recursively(dir_path_content, template_path, dir_path_public)
 
 
 main ()
