@@ -1,0 +1,17 @@
+If an error is being thrown when creating the html files from the markdown, dele the ".DS_Store" files.. run command:
+find . -name ".DS_Store" - delete
+
+this finds and deletes all files that match the name in the current directory tree
+
+
+
+
+
+If there is an error where the server gets stuck and doesn't allow to run the program:
+run command:
+ps -a
+
+locate the PID for the http.server 8888  process
+run command:
+kill -9 *PID*
+
